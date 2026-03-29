@@ -1,8 +1,8 @@
 # Core AI Framework
-langgraph>=1.1.0
-langchain>=1.2.0
-langchain-openai>=1.1.12
-langchain-core>=1.2.22
+langgraph>=0.2.0
+langchain>=0.2.0
+langchain-openai>=0.2.0
+langchain-core>=0.2.0
 
 # Sandbox & Execution
 e2b-code-interpreter>=1.1.0

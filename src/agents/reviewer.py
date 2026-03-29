@@ -88,18 +88,39 @@ def reviewer_node(state: AgentState) -> AgentState:
             review_content = "✅ CODE PASSED ALL TESTS - HIGH CONFIDENCE APPROVAL\n\nTest-driven validation successful. All automated tests passed, indicating the implementation meets specifications and handles edge cases correctly."
             is_successful = True
         else:
-            # Tests failed - critical issues
-            review_criteria = ReviewCriteria(
-                correctness=False,
-                spec_compliance=False,
-                performance=False,
-                readability=False,
-                error_handling=False,
-                issues=["Automated tests failed - implementation does not meet requirements"],
-                score=20.0
-            )
-            review_content = "❌ CODE FAILED TESTS - REQUIRES FIXING\n\nAutomated test suite identified critical issues. The implementation does not pass the generated test cases, indicating problems with functionality or edge case handling."
-            is_successful = False
+            # Tests failed - analyze core execution to determine severity
+            core_execution_success = False
+            if state.get("last_execution") and state["last_execution"].get("artifacts"):
+                core_exec = state["last_execution"]["artifacts"].get("core_execution")
+                if core_exec and core_exec.get("success"):
+                    core_execution_success = True
+            
+            if core_execution_success:
+                # Core works but tests fail - partial credit, allow retry with feedback
+                review_criteria = ReviewCriteria(
+                    correctness=True,  # Core logic works
+                    spec_compliance=False,  # But doesn't pass tests
+                    performance=True,  # Assume OK if core works
+                    readability=True,  # Assume OK
+                    error_handling=False,  # Tests indicate issues
+                    issues=["Tests failed but core execution succeeded - likely edge case or test logic issues"],
+                    score=60.0  # Partial credit
+                )
+                review_content = "⚠️ PARTIAL SUCCESS - TESTS FAILED BUT CORE WORKS\n\nThe core implementation executes successfully, but automated tests are failing. This suggests the basic functionality works but there may be issues with edge cases, input validation, or test expectations. Recommend refining the implementation."
+                is_successful = False  # Allow retry
+            else:
+                # Both core and tests failed - critical issues
+                review_criteria = ReviewCriteria(
+                    correctness=False,
+                    spec_compliance=False,
+                    performance=False,
+                    readability=False,
+                    error_handling=False,
+                    issues=["Both core execution and tests failed - implementation has critical issues"],
+                    score=20.0
+                )
+                review_content = "❌ CRITICAL FAILURE - CODE DOESN'T WORK\n\nBoth the core implementation and tests failed. The code has fundamental issues that prevent execution."
+                is_successful = False
     else:
         # Fall back to subjective LLM review if no tests available
         # Create detailed review prompt
