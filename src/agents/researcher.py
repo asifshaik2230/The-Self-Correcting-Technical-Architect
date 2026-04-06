@@ -3,7 +3,7 @@ Researcher Node: Analyzes task requirements, performs web research, and generate
 """
 
 import logging
-from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
 
 from src.state import AgentState
@@ -34,9 +34,9 @@ def researcher_node(state: AgentState) -> AgentState:
     """
     logger.info("Researcher node: Analyzing task requirements...")
     
-    llm = ChatOpenAI(
-        model=settings.openai_model,
-        api_key=settings.openai_api_key,
+    llm = ChatGoogleGenerativeAI(
+        model=settings.gemini_model,
+        google_api_key=settings.GOOGLE_API_KEY,
         temperature=0.7
     )
     
@@ -75,10 +75,12 @@ Return only the search query, nothing else."""
     # Step 5: Create comprehensive research prompt with both memory and web results
     memory_section = ""
     if memory_results:
-        memory_section = "\nHistoric Reference Code:\n" + "\n\n".join([
-            f"Previous Solution (Score: {result['spec_compliance_score']:.1f}):\n{result['final_code'][:1000]}{'...' if len(result['final_code']) > 1000 else ''}"
-            for result in memory_results
-        ])
+        memory_context = ""
+        for result in memory_results:
+            score = result.get('score', result.get('spec_compliance_score', 0.0))
+            code_text = result.get('code', result.get('final_code', ''))
+            memory_context += f"Previous Solution (Score: {score:.1f}):\n{code_text[:1000]}{'...' if len(code_text) > 1000 else ''}\n\n"
+        memory_section = "\nHistoric Reference Code:\n" + memory_context
     
     research_prompt = f"""You are an expert technical architect. Analyze the following task and specification, incorporating both historical solutions and current web search results.
 

@@ -4,7 +4,7 @@ Reviewer Node: Validates generated code against technical specifications.
 
 import logging
 from datetime import datetime
-from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
 
 from src.state import AgentState, ReviewCriteria
@@ -33,10 +33,10 @@ def reviewer_node(state: AgentState) -> AgentState:
     """
     logger.info("Reviewer node: Reviewing code against specification...")
     
-    llm = ChatOpenAI(
-        model=settings.openai_model,
-        api_key=settings.openai_api_key,
-        temperature=0.3  # Lower temperature for objective review
+    llm = ChatGoogleGenerativeAI(
+        model=settings.gemini_model,
+        google_api_key=settings.GOOGLE_API_KEY,
+        temperature=0.2
     )
     
     # Build review context
@@ -75,7 +75,7 @@ def reviewer_node(state: AgentState) -> AgentState:
     # TDD Priority: Check test results first
     if test_results_available:
         if tests_passed:
-            # Tests passed - high confidence success
+            # Tests passed - high confidence success, assign high score
             review_criteria = ReviewCriteria(
                 correctness=True,
                 spec_compliance=True,
@@ -83,12 +83,18 @@ def reviewer_node(state: AgentState) -> AgentState:
                 readability=True,
                 error_handling=True,
                 issues=[],
-                score=95.0
+                score=98.0  # Very high score for passing tests
             )
-            review_content = "✅ CODE PASSED ALL TESTS - HIGH CONFIDENCE APPROVAL\n\nTest-driven validation successful. All automated tests passed, indicating the implementation meets specifications and handles edge cases correctly."
+            review_content = "✅ CODE PASSED ALL TESTS - EXCELLENT\n\nTest-driven validation successful. All automated tests passed, confirming the implementation meets specifications and handles edge cases correctly. High confidence in code quality."
             is_successful = True
         else:
-            # Tests failed - analyze core execution to determine severity
+            # Tests failed - extract specific failure information
+            test_exec_result = state["last_execution"]["artifacts"].get("test_execution", {})
+            test_stdout = test_exec_result.get("stdout", "")
+            test_stderr = test_exec_result.get("stderr", "")
+            test_summary = test_exec_result.get("artifacts", {}).get("test_summary", {})
+            
+            # Check if core execution worked
             core_execution_success = False
             if state.get("last_execution") and state["last_execution"].get("artifacts"):
                 core_exec = state["last_execution"]["artifacts"].get("core_execution")
@@ -96,17 +102,43 @@ def reviewer_node(state: AgentState) -> AgentState:
                     core_execution_success = True
             
             if core_execution_success:
-                # Core works but tests fail - partial credit, allow retry with feedback
+                # Core works but tests fail - extract specific assertion failures
+                failure_messages = ""
+                if "✗" in test_stdout:
+                    # Extract test failure lines
+                    lines = test_stdout.split("\n")
+                    failure_lines = [line for line in lines if "✗" in line or "FAILED" in line]
+                    failure_messages = "\n".join(failure_lines[:10])  # Top 10 failures
+                
+                if not failure_messages and test_stderr:
+                    failure_messages = test_stderr
+                
                 review_criteria = ReviewCriteria(
                     correctness=True,  # Core logic works
-                    spec_compliance=False,  # But doesn't pass tests
-                    performance=True,  # Assume OK if core works
-                    readability=True,  # Assume OK
+                    spec_compliance=False,  # Doesn't pass tests yet
+                    performance=True,
+                    readability=True,
                     error_handling=False,  # Tests indicate issues
-                    issues=["Tests failed but core execution succeeded - likely edge case or test logic issues"],
-                    score=60.0  # Partial credit
+                    issues=["Test assertions failed - implementation doesn't match expected behavior"],
+                    score=50.0  # Lower partial credit for test failures
                 )
-                review_content = "⚠️ PARTIAL SUCCESS - TESTS FAILED BUT CORE WORKS\n\nThe core implementation executes successfully, but automated tests are failing. This suggests the basic functionality works but there may be issues with edge cases, input validation, or test expectations. Recommend refining the implementation."
+                
+                review_content = f"""⚠️ TEST FAILURES - CORE WORKS, BUT TESTS FAIL
+
+The core implementation executes successfully, but the test suite is failing. 
+
+**Specific Failures Detected:**
+{failure_messages if failure_messages else "See test output below for details."}
+
+**Action Required:**
+1. Review the test failure messages above
+2. Verify the implementation matches the expected behavior
+3. Check all edge cases from the specification are handled correctly
+4. Ensure error handling works as specified
+
+**Test Output:**
+{test_stdout[-1000:] if test_stdout else "No output"}"""
+                
                 is_successful = False  # Allow retry
             else:
                 # Both core and tests failed - critical issues
@@ -116,10 +148,21 @@ def reviewer_node(state: AgentState) -> AgentState:
                     performance=False,
                     readability=False,
                     error_handling=False,
-                    issues=["Both core execution and tests failed - implementation has critical issues"],
-                    score=20.0
+                    issues=["Core execution failed - implementation has critical issues"],
+                    score=15.0
                 )
-                review_content = "❌ CRITICAL FAILURE - CODE DOESN'T WORK\n\nBoth the core implementation and tests failed. The code has fundamental issues that prevent execution."
+                review_content = f"""❌ CRITICAL FAILURE - IMPLEMENTATION ERROR
+
+Both the core code and tests failed to execute. The implementation has fundamental issues.
+
+**Error Details:**
+{test_stderr if test_stderr else "Check test output for error messages"}
+
+**Action Required:**
+- Review the syntax and logic of the implementation
+- Ensure all required functions are defined
+- Check for import or type errors"""
+                
                 is_successful = False
     else:
         # Fall back to subjective LLM review if no tests available

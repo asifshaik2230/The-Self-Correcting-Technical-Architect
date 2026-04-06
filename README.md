@@ -1,448 +1,555 @@
 # The Self-Correcting Technical Architect
 
-An autonomous agent system that uses LangGraph for stateful orchestration and E2B sandboxed execution to autonomously plan, code, execute, and review solutions with self-correction capabilities.
+An autonomous AI-powered system that analyzes requirements, generates code, executes it in a sandbox, validates against specifications, and iteratively improves through self-correction. Built with LangGraph, LangChain, and E2B.
 
-## 🎯 Architecture Overview
+## 🎯 Overview
 
-The system implements a **Plan → Code → Execute → Review** feedback loop using LangGraph's state machine:
+This system implements a sophisticated multi-agent architecture that combines:
 
-```
-┌──────────────┐
-│  Researcher  │  Analyzes requirements and creates implementation plan
-└──────┬───────┘
-       │
-       ▼
-┌──────────────┐
-│    Coder     │  Generates production-ready code based on plan
-└──────┬───────┘
-       │
-       ▼
-┌──────────────┐
-│   Executor   │  Runs code in E2B sandboxed environment
-└──────┬───────┘
-       │
-       ▼
-┌──────────────┐
-│   Reviewer   │  Validates code against technical specification
-└──────┬───────┘
-       │
-       ├─→ Success? → END (return final code)
-       │
-       └─→ Failure? → Retry (max 3 attempts) → Loop back to Coder
-```
+- **Researcher Agent**: Analyzes requirements and generates research-grounded plans
+- **Coder Agent**: Generates implementation code and comprehensive test suites
+- **Executor Agent**: Runs code in isolated E2B sandboxes for safe execution
+- **Reviewer Agent**: Validates code against specifications and provides feedback
 
-## 📁 Project Structure
-
-```
-Automation/
-├── src/
-│   ├── __init__.py
-│   ├── main.py                 # Entry point and graph builder
-│   ├── state.py                # TypedDict definitions for agent state
-│   ├── config.py               # Configuration and settings management
-│   ├── agents/
-│   │   ├── __init__.py
-│   │   ├── researcher.py       # Plan & analysis node
-│   │   ├── coder.py            # Code generation node
-│   │   ├── executor.py         # Sandbox execution node
-│   │   └── reviewer.py         # Spec validation node
-│   └── tools/
-│       └── __init__.py         # (Future: utility functions)
-├── tests/
-│   ├── __init__.py
-│   ├── test_main.py
-│   └── test_state.py
-├── requirements.txt            # Python dependencies with exact versions
-├── setup.sh                    # Environment initialization script
-├── Makefile                    # Build and development commands
-├── .env.example                # Template for environment variables
-├── README.md                   # This file
-└── .gitignore
-```
-
-## 🔧 Technology Stack
-
-### Core Framework
-
-- **LangGraph** (0.2.8): Stateful graph-based orchestration
-- **LangChain** (0.1.14): LLM interaction framework
-- **LangChain-OpenAI** (0.1.8): OpenAI API integration
-
-### Code Execution
-
-- **E2B Code Interpreter** (1.0.3): Secure sandboxed code execution
-
-### Data & Config
-
-- **Pydantic** (2.6.3): Data validation and settings
-- **Python-dotenv** (1.0.0): Environment variable management
-
-### Development
-
-- **Pytest** (7.4.4): Testing framework
-- **Black** (24.1.1): Code formatting
-- **Pylint** (3.0.3): Code linting
-- **MyPy** (1.8.0): Static type checking
+The system uses **Test-Driven Development (TDD)** as the core validation mechanism and incorporates a **self-correcting feedback loop** that allows agents to iteratively improve solutions.
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- Python 3.9+
-- OpenAI API key
-- E2B API key (for sandboxed execution)
+- Python 3.10 or later (tested with Python 3.14)
+- Active API keys for OpenAI, E2B, and Tavily
 
-### Setup
+### Installation
 
-1. **Clone and navigate to the project:**
+#### 1. Clone the Repository
 
-   ```bash
-   cd /Users/asifshaik/coding/genai/Automation
-   ```
+```bash
+cd /Users/asifshaik/coding/genai/Automation/The-Self-Correcting-Technical-Architect
+```
 
-2. **Run the setup script (recommended):**
+#### 2. Run Setup Script (Recommended)
 
-   ```bash
-   bash setup.sh
-   ```
+```bash
+bash setup.sh
+```
 
-   Or manually:
+This script will:
 
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   cp .env.example .env
-   ```
+- Verify Python 3.9+ is installed
+- Create a virtual environment
+- Install all dependencies from `requirements.txt`
+- Verify `.env` file exists
 
-3. **Configure API keys in `.env`:**
+#### 3. Manual Setup (Alternative)
 
-   ```bash
-   # Edit .env and add:
-   OPENAI_API_KEY=sk-your-key-here
-   E2B_API_KEY=your-e2b-key-here
-   ```
+```bash
+# Create virtual environment
+python3 -m venv venv
 
-4. **Verify the setup:**
-   ```bash
-   make check  # Runs linting and format checks
-   ```
+# Activate virtual environment (macOS/Linux)
+source venv/bin/activate
+# On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### Configuration
+
+#### 1. Update `.env` File
+
+Add your API keys to the `.env` file:
+
+```bash
+# OpenAI Configuration (Required)
+OPENAI_API_KEY=sk-proj-your-actual-key-here
+OPENAI_MODEL=gpt-4o
+
+# E2B Sandbox Configuration (Required)
+E2B_API_KEY=e2b_your-actual-key-here
+
+# Tavily Search Configuration (Optional)
+TAVILY_API_KEY=tvly-your-actual-key-here
+
+# Agent Configuration
+MAX_RETRIES=3
+CODE_EXECUTION_TIMEOUT=30
+
+# Project Configuration
+ENVIRONMENT=development
+DEBUG_MODE=false
+```
+
+**API Key Sources:**
+
+- **OpenAI**: https://platform.openai.com/account/api-keys
+- **E2B**: https://e2b.dev/docs/getting-started/api-key
+- **Tavily**: https://tavily.com/ (optional)
+
+#### 2. Verify Installation
+
+```bash
+# Activate virtual environment
+source venv/bin/activate
+
+# Check Python version
+python --version  # Should be 3.10+
+
+# Verify dependencies
+python -c "import langgraph, langchain, e2b; print('✅ All dependencies installed!')"
+```
 
 ## 📖 Usage
 
-### Run with Default Task
+### Running the Default Example
+
+```bash
+# Activate virtual environment
+source venv/bin/activate
+
+# Run the agent
+python -m src.main
+```
+
+This demonstrates the full workflow with a Fibonacci task.
+
+**Expected Output:**
+
+```
+2026-04-06 22:25:49,799 - __main__ - INFO - Initializing agent for task: fib_task_001
+2026-04-06 22:25:49,799 - __main__ - INFO - Task: Write a Python function that calculates the Fibonacci sequence
+2026-04-06 22:25:49,815 - __main__ - INFO - Starting LangGraph execution...
+...
+2026-04-06 22:26:39,847 - __main__ - INFO - Agent execution completed. Status: reviewing
+2026-04-06 22:26:39,848 - __main__ - INFO - Success: True
+
+=== Final Report ===
+[Generated solution report]
+```
+
+### Creating Custom Tasks
+
+Edit `src/main.py` to customize the task:
+
+```python
+# Around line 193 in src/main.py
+
+EXAMPLE_TASK = "Write a function to validate email addresses"
+EXAMPLE_SPEC = """
+Requirements:
+1. Accept an email string as input
+2. Return True if valid, False otherwise
+3. Handle RFC 5322 standards
+4. Support common TLDs (.com, .org, .net, etc)
+5. Include comprehensive error handling
+"""
+
+result = asyncio.run(run_agent(EXAMPLE_TASK, EXAMPLE_SPEC, "email_validator_001"))
+```
+
+Then run:
 
 ```bash
 python -m src.main
 ```
 
-### Run a Custom Task
+### Viewing Results
 
-```python
-import asyncio
-from src.main import run_agent
+Results are saved in two places:
 
-async def main():
-    result = await run_agent(
-        task_description="Write a function that finds prime numbers",
-        technical_spec="""
-        Requirements:
-        1. Accept a parameter n
-        2. Return list of primes up to n
-        3. Handle n < 2 edge case
-        4. Optimize for performance
-        """,
-        task_id="prime_finder_001"
-    )
-    print(f"Success: {result['success']}")
-    print(f"Final Code:\n{result['final_code']}")
+1. **Console Output**: Real-time logs during execution
+2. **Memory File**: `logs/experience_memory.json`
+   - Successful solutions are automatically saved
+   - Enables learning across multiple runs
 
-asyncio.run(main())
+## 🏗️ System Architecture
+
+### Workflow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   LangGraph State Machine                    │
+├─────────────────────────────────────────────────────────────┤
+│                                                               │
+│  ┌──────────┐     ┌────────┐     ┌──────────┐   ┌─────────┐ │
+│  │Researcher│────▶│ Coder  │────▶│ Executor │──▶│Reviewer │ │
+│  └──────────┘     └────────┘     └──────────┘   └────┬────┘ │
+│       ▲                                                │      │
+│       │          ┌──────────────────────────────────┘       │
+│       │          │  (Retry if review score < 75)            │
+│       └──────────┘  Max 3 attempts                          │
+│                                                               │
+└─────────────────────────────────────────────────────────────┘
+
+External Services:
+├── OpenAI GPT-4o (Research, Code Generation, Review)
+├── E2B Sandbox (Safe Code Execution)
+├── Tavily Search (Web Research)
+└── Local Storage (Memory System)
 ```
 
-### Using Make Commands
+### Agent Responsibilities
+
+#### 1. Researcher Agent
+
+- Analyzes task requirements and technical specifications
+- Performs web search for best practices
+- Retrieves similar past solutions from memory
+- Generates research-grounded implementation plan
+
+#### 2. Coder Agent
+
+- Receives the research plan
+- Generates production-ready Python implementation:
+  - Type hints
+  - PEP 8 compliance
+  - Comprehensive docstrings
+  - Error handling
+- Generates pytest test suite with comprehensive coverage
+- Includes detailed explanation
+
+#### 3. Executor Agent
+
+- Spawns isolated E2B sandbox environment
+- Executes core implementation
+- Runs test suite against implementation
+- Captures output, errors, execution time
+- Provides detailed execution artifacts
+
+#### 4. Reviewer Agent
+
+- Validates code against technical specification
+- Evaluates test results (TDD-first approach)
+- Assesses code quality (readability, performance)
+- Scores overall compliance (0-100)
+- Provides structured feedback
+- **Decision**: Accept (score ≥ 75) or Retry (score < 75)
+
+#### 5. Feedback Loop
+
+- Failed solutions trigger retry with feedback
+- Maximum 3 retry attempts
+- Successful solutions (score ≥ 75) are saved to memory
+- Full conversation history enables context-aware improvements
+
+## 📊 Output Interpretation
+
+### Log Levels
+
+- **INFO**: Major workflow steps and results
+- **WARNING**: Validation failures and retry triggers
+- **ERROR**: Critical failures stopping execution
+- **DEBUG**: Detailed execution info (enable with `DEBUG_MODE=true`)
+
+### Review Scoring
+
+```
+Score Range     Status      Action
+═══════════════════════════════════════════════════
+95-100         ✅ PASS     Solution accepted, saved
+75-94          ✅ PASS     Solution accepted
+60-74          ⚠️  RETRY    Triggers retry (with feedback)
+0-59           ❌ FAIL      Critical issues, redesign needed
+```
+
+### Success Indicators
+
+**✅ Successful Execution:**
+
+```
+Status: reviewing
+Success: True
+Review Score: 80+
+Final code saved to memory
+```
+
+**❌ Failed Execution:**
+
+```
+Max retries (3) reached
+Success: False
+Check logs for test output details
+```
+
+## 🛠️ Troubleshooting
+
+### Problem: Tests Fail But Core Executes
+
+**Symptoms:**
+
+```
+Execution completed - Core: True, Tests: False
+Review failed. Score: 60.0/100
+```
+
+**Root Cause:**
+The generated tests don't properly validate the implementation. This happens when:
+
+- Test assertions are incorrect
+- Tests don't cover spec requirements
+- Tests have incorrect expected values
+
+**Solution:**
+
+1. Enable debug mode to see test output:
 
 ```bash
-# Environment setup
-make setup          # Full environment initialization
-make venv           # Create virtual environment
-make env            # Create .env from template
-
-# Installation
-make install        # Install dependencies
-make install-dev    # Install dev tools
-
-# Development
-make format         # Format code with Black
-make lint           # Run linting checks
-make test           # Run tests with coverage
-make clean          # Remove generated files
-
-# Execution
-make run            # Run the agent
-make run-example    # Run with example task
-
-# Utilities
-make check          # Run all code checks
-make all            # Full setup, install, test, lint
+DEBUG_MODE=true python -m src.main
 ```
 
-## 🔄 Agent State Flow
+2. The debug logs show test output, look for:
+   - Failed assertion details
+   - Expected vs actual values
+   - Missing test coverage
 
-### State Dictionary (TypedDict: `AgentState`)
+3. System retries automatically with improved tests (max 3 attempts)
+4. If all retries fail, review the spec - it may be ambiguous
 
-```python
-AgentState = {
-    # Identifiers
-    'task_id': str,
-    'task_description': str,
-    'technical_spec': str,
+### Problem: API Keys Not Found
 
-    # Messages and history
-    'messages': List[AgentMessage],  # Full conversation history
+**Error:**
 
-    # Code tracking
-    'code': str,                      # Current implementation
-    'code_history': List[str],        # Previous versions
-    'code_explanation': str,
+```
+ValidationError: OPENAI_API_KEY - Field required
+```
 
-    # Execution results
-    'execution_logs': List[ExecutionResult],
-    'last_execution': Optional[ExecutionResult],
+**Solution:**
 
-    # Validation
-    'validation_errors': List[str],
-    'review_feedback': str,
-    'spec_compliance_score': float,   # 0.0 to 1.0
+1. Verify `.env` exists: `ls -la .env`
+2. Check key is set: `grep OPENAI_API_KEY .env`
+3. Ensure correct format: `OPENAI_API_KEY=sk-proj-xxx` (no spaces)
+4. Re-activate venv: `source venv/bin/activate`
 
-    # Control flow
-    'retry_count': int,
-    'max_retries': int,
-    'status': str,                    # planning|coding|executing|reviewing|completed|failed
+### Problem: Model Not Found
 
-    # Outputs
-    'final_code': Optional[str],
-    'final_report': Optional[str],
-    'success': bool,
+**Error:**
+
+```
+Error code: 404 - Model 'gpt-4-turbo' does not exist
+```
+
+**Solution:**
+
+1. Verify `.env` has correct model: `OPENAI_MODEL=gpt-4o`
+2. Check `src/config.py` uses `gpt-4o`
+3. Ensure OpenAI account has access to model
+
+### Problem: Rate Limit Exceeded
+
+**Error:**
+
+```
+Error code: 429 - You exceeded your current quota
+```
+
+**Solution:**
+
+- Upgrade OpenAI account to paid tier
+- Or wait for monthly quota reset
+- Implement local caching for development
+
+### Problem: Python/Dependency Conflicts
+
+**Error:**
+
+```
+Pydantic V1 compatibility error with Python 3.14
+```
+
+**Solution:**
+
+- Update all packages: `pip install -r requirements.txt --upgrade`
+- Conflicts are usually auto-resolved by pip
+- Last resort: Fresh venv `rm -rf venv && bash setup.sh`
+
+## 📚 Project Structure
+
+```
+The-Self-Correcting-Technical-Architect/
+├── src/
+│   ├── __init__.py
+│   ├── main.py              # Entry point and graph builder
+│   ├── config.py            # Configuration management
+│   ├── state.py             # State definitions (TypedDict)
+│   ├── agents/
+│   │   ├── researcher.py    # Research and planning
+│   │   ├── coder.py         # Code generation
+│   │   ├── executor.py      # Sandbox execution
+│   │   └── reviewer.py      # Validation and review
+│   └── tools/
+│       ├── memory.py        # Experience persistence
+│       └── search.py        # Web search integration
+├── tests/
+│   ├── test_main.py
+│   ├── test_state.py
+│   └── __init__.py
+├── logs/
+│   └── experience_memory.json    # Saved solutions
+├── .env                     # Configuration (git-ignored)
+├── .gitignore
+├── requirements.txt         # Python dependencies
+├── setup.sh                 # Automated setup
+└── README.md               # This file
+```
+
+## 💾 Memory System
+
+### How It Works
+
+The system learns from every successful solution:
+
+1. **Storage**: Solutions saved to `logs/experience_memory.json`
+2. **Retrieval**: Researcher retrieves similar past solutions
+3. **Learning**: Past solutions inform implementation planning
+4. **Persistence**: Memory survives across multiple runs
+
+### Memory Entry Structure
+
+```json
+{
+  "task_id": "fib_task_001",
+  "task_description": "Write a Python function that calculates the Fibonacci sequence",
+  "technical_spec": "Requirements: 1. Accept n... 2. Return list...",
+  "final_code": "def fibonacci(n: int) -> List[int]: ...",
+  "spec_compliance_score": 95.0,
+  "timestamp": "2026-04-06T22:26:39.123456",
+  "tags": ["fibonacci", "sequence", "algorithm"]
 }
 ```
 
-## 🔐 Node Responsibilities
+## ⚙️ Advanced Configuration
 
-### Researcher Node
-
-- **Input**: Task description, technical specification
-- **Process**: Analyzes requirements, creates implementation strategy
-- **Output**: Structured plan with components, algorithms, challenges
-- **Next**: Coder
-
-### Coder Node
-
-- **Input**: Research plan, specification, previous feedback
-- **Process**: Generates production-ready Python code with:
-  - Type hints
-  - Error handling
-  - Comprehensive docstrings
-  - PEP 8 compliance
-- **Output**: Generated source code
-- **Next**: Executor
-
-### Executor Node
-
-- **Input**: Generated code
-- **Process**: Executes code in E2B sandbox with:
-  - Timeout protection (30s default)
-  - Output capture (stdout/stderr)
-  - Execution time tracking
-- **Output**: Execution results and artifacts
-- **Next**: Reviewer
-
-### Reviewer Node
-
-- **Input**: Code, execution results, specification
-- **Process**: Validates against spec:
-  - Correctness check
-  - Spec compliance
-  - Error handling coverage
-  - Performance assessment
-  - Code quality review
-- **Output**: Review score (0-100), issues list, compliance status
-- **Decision**: Success (END) or Retry (max 3)
-- **Next**: Coder (retry) or END
-
-## 🛡️ Error Handling & Retry Logic
-
-1. **Automatic Retries**: If review fails, the agent retries code generation (max 3 attempts)
-2. **Timeout Protection**: E2B sandbox has 30-second execution timeout
-3. **Validation Errors**: Captured and included in retry feedback to the coder
-4. **State Preservation**: Full message history allows context-aware retries
-
-## ⚙️ Configuration
-
-### Environment Variables (`.env`)
-
-```
-# OpenAI Configuration
-OPENAI_API_KEY=sk-...           # Required: OpenAI API key
-OPENAI_MODEL=gpt-4-turbo        # Model selection (default: gpt-4-turbo)
-
-# E2B Configuration
-E2B_API_KEY=...                 # Required: E2B sandbox API key
-
-# Agent Configuration
-MAX_RETRIES=3                   # Max retry attempts (default: 3)
-CODE_EXECUTION_TIMEOUT=30       # Timeout in seconds (default: 30s)
-
-# Optional: LangChain Tracing
-LANGCHAIN_API_KEY=
-LANGCHAIN_TRACING_V2=false
-
-# Project Settings
-ENVIRONMENT=development         # development|production
-DEBUG_MODE=false               # Enable debug logging
-```
-
-## 📊 Monitoring & Logging
-
-Logs are written to stdout with the format:
-
-```
-2026-03-25 10:30:45,123 - src.agents.researcher - INFO - Researcher node: Plan generated successfully
-```
-
-Log files can be captured by redirecting output:
+### Custom Memory Location
 
 ```bash
-python -m src.main > logs/run_$(date +%s).log 2>&1
+MEMORY_FILE_PATH=custom/path/memory.json
 ```
 
-## 🧪 Testing
+### Adjust Timeouts
 
 ```bash
-# Run all tests
-make test
-
-# Run specific test file
-pytest tests/test_main.py -v
-
-# Run with coverage
-pytest tests/ --cov=src --cov-report=html
-
-# Run without coverage (faster)
-make test-quick
+# Maximum code execution time (seconds)
+CODE_EXECUTION_TIMEOUT=60  # Default: 30
 ```
 
-## 📋 Development Workflow
-
-1. **Code changes**: Make edits in `src/`
-2. **Format**: `make format`
-3. **Lint**: `make lint`
-4. **Test**: `make test`
-5. **Run**: `make run`
-
-Or run all at once:
+### Control Retries
 
 ```bash
-make check
+# Maximum retry attempts
+MAX_RETRIES=5  # Default: 3
 ```
 
-## 🔍 Type Safety
-
-The project uses:
-
-- **TypedDict** for structured state definitions
-- **Type hints** throughout codebase
-- **MyPy** static type checking
-
-Check types:
+### Enable Detailed Logging
 
 ```bash
-mypy src/ --ignore-missing-imports
+DEBUG_MODE=true  # Enables DEBUG level logging
 ```
 
-## 📚 Key Concepts
-
-### LangGraph State Machine
-
-- **Nodes**: Functions that process state (researcher, coder, executor, reviewer)
-- **Edges**: Transitions between nodes
-- **Conditional Edges**: Routes based on state (review pass/fail)
-- **State**: Dictionary shared across all nodes
-
-### E2B Sandbox
-
-- **Isolation**: Code runs in isolated container
-- **Security**: No filesystem or network access by default
-- **Results**: Captures stdout, stderr, artifacts
-
-### TypedDict
-
-- Provides IDE autocomplete for state dictionaries
-- Type hints without runtime overhead
-- Prevents typos in state key access
-
-## 🚨 Troubleshooting
-
-### "ImportError: No module named 'langgraph'"
+## 🧪 Running Tests
 
 ```bash
+# Activate venv
 source venv/bin/activate
-pip install -r requirements.txt
+
+# Run all tests
+pytest tests/ -v
+
+# Run specific test
+pytest tests/test_main.py::test_create_initial_state -v
+
+# Run with coverage report
+pytest tests/ --cov=src --cov-report=html
 ```
 
-### "OPENAI_API_KEY not found"
+## 📈 Performance & Costs
 
-```bash
-cp .env.example .env
-# Edit .env and add your key
-```
+### Estimated API Usage Per Task
 
-### "E2B sandbox timeout"
+- **OpenAI**: 5-10 requests (~5,000 tokens each)
+  - Cost: $0.05-0.15 per task
+- **E2B**: 2-3 sandbox instances
+  - Cost: $0.01-0.03 per task
 
-Increase timeout in `.env`:
+- **Tavily**: 1 optional search request
+  - Cost: Varies
 
-```
-CODE_EXECUTION_TIMEOUT=60
-```
+**Total estimated: $0.06-0.20 per task with retries**
 
-### "Code execution always succeeds (mock mode)"
+### Cost Optimization
 
-E2B not installed. Install it:
+1. **Reduce retries**: `MAX_RETRIES=2` saves ~$0.05/task
+2. **Cache results**: Use memory for similar tasks
+3. **Batch processing**: Multiple tasks in sequence
+4. **Monitor**: Check OpenAI usage dashboard regularly
 
-```bash
-pip install e2b-code-interpreter
-```
+## 🚦 Development Roadmap
 
-## 📝 Notes for Solo Development
+### Phase 1: Core System ✅ COMPLETE
 
-This architecture is optimized for solo developers:
+- Multi-agent LangGraph architecture
+- Code generation and E2B sandbox execution
+- Test-driven validation
+- Memory system
 
-- **Minimal dependencies**: Only essential libraries
-- **Clear separation**: Each node handles one responsibility
-- **Easy to extend**: Add new nodes without changing existing ones
-- **Type safety**: Prevents bugs through static typing
-- **Testing**: Comprehensive test structure ready to use
+### Phase 2: Enhanced Intelligence 🔄 IN PROGRESS
 
-## 🔮 Future Enhancements
+- Vector database for semantic memory (Pinecone/Chroma)
+- Code quality metrics (complexity, coverage)
+- Performance profiling
+- Improved test evaluation
 
-- [ ] Add persistent state storage (database)
-- [ ] Implement parallel execution for independent tasks
-- [ ] Add memory/vector store for knowledge persistence
-- [ ] Support multiple LLM providers (Claude, Gemini)
-- [ ] Add structured output parsing (Pydantic validators)
-- [ ] Web UI for task submission and monitoring
-- [ ] Metrics and performance dashboards
+### Phase 3: Advanced Features 📋 PLANNED
+
+- Human approval gates
+- Multi-project learning
+- Performance optimization patterns
+- Advanced LLM capabilities
+
+### Phase 4: Production Ready
+
+- Comprehensive monitoring
+- Rate limiting and queuing
+- API versioning
+- Scalability improvements
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create feature branch: `git checkout -b feature/your-feature`
+3. Commit changes: `git commit -m 'Add feature'`
+4. Push branch: `git push origin feature/your-feature`
+5. Submit pull request
 
 ## 📄 License
 
 MIT License - See LICENSE file for details
 
-## 🤝 Contributing
+## 🙏 Acknowledgments
 
-This is a solo dev project, but feel free to fork and customize!
+- **LangGraph**: State machine orchestration
+- **OpenAI**: GPT-4o language model
+- **E2B**: Secure code execution
+- **Tavily**: Web search API
+
+## 📧 Support & Resources
+
+**For Issues:**
+
+1. Check [Troubleshooting](#troubleshooting) section
+2. Review logs for error details
+3. Enable `DEBUG_MODE=true` for detailed output
+4. Check GitHub Issues
+
+**Learning Resources:**
+
+- [LangGraph Docs](https://langchain-ai.github.io/langgraph/)
+- [LangChain Docs](https://python.langchain.com/)
+- [E2B Docs](https://e2b.dev/)
+- [OpenAI API](https://platform.openai.com/docs/api-reference)
 
 ---
 
-**Created**: March 2026  
-**Status**: Production-Ready (Phase 1)  
-**Maintained by**: Your Name
+**Last Updated**: April 6, 2026  
+**Version**: 1.0.0  
+**Status**: Production Ready ✅

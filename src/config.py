@@ -7,12 +7,12 @@ class Settings(BaseSettings):
     Maps .env variables to both uppercase and lowercase attributes to support
     varying naming conventions across different agent nodes.
     """
-    # OpenAI Configuration
-    OPENAI_API_KEY: str
-    openai_api_key: str = "" # Alias for lowercase calls
+    # Google Gemini Configuration
+    GOOGLE_API_KEY: str
+    google_api_key: str = ""
 
-    OPENAI_MODEL: str = "gpt-4-turbo"
-    openai_model: str = "gpt-4-turbo" # Fixes the Researcher node error
+    GEMINI_MODEL: str = "gemini-1.5-pro"
+    gemini_model: str = "gemini-1.5-pro"
 
     # E2B Configuration
     E2B_API_KEY: str
@@ -45,9 +45,8 @@ class Settings(BaseSettings):
 
     def __init__(self, **values):
         super().__init__(**values)
-        # Ensure aliases are populated if only uppercase exists in .env
-        self.openai_api_key = self.OPENAI_API_KEY
-        self.openai_model = self.OPENAI_MODEL
+        self.google_api_key = self.GOOGLE_API_KEY
+        self.gemini_model = self.GEMINI_MODEL
         self.e2b_api_key = self.E2B_API_KEY
         self.tavily_api_key = self.TAVILY_API_KEY
         self.memory_file_path = self.MEMORY_FILE_PATH

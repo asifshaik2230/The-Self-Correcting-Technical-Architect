@@ -17,7 +17,7 @@ from datetime import datetime
 from typing import Any
 
 from langgraph.graph import StateGraph, END
-from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage, AIMessage
 
 from src.state import AgentState, AgentMessage, ExecutionResult
@@ -131,16 +131,16 @@ def build_graph() -> StateGraph:
     return graph.compile()
 
 
-def initialize_llm() -> ChatOpenAI:
+def initialize_llm() -> ChatGoogleGenerativeAI:
     """
-    Initialize the OpenAI language model.
+    Initialize the Google Gemini language model.
     
     Returns:
-        ChatOpenAI: Configured LLM instance
+        ChatGoogleGenerativeAI: Configured LLM instance
     """
-    return ChatOpenAI(
-        model=settings.openai_model,
-        api_key=settings.openai_api_key,
+    return ChatGoogleGenerativeAI(
+        model=settings.gemini_model,
+        google_api_key=settings.GOOGLE_API_KEY,
         temperature=0.7,
     )
 
@@ -180,6 +180,33 @@ async def run_agent(
         
         logger.info(f"Agent execution completed. Status: {final_state['status']}")
         logger.info(f"Success: {final_state['success']}")
+        
+        # Export successful output
+        if final_state["success"]:
+            os.makedirs("output", exist_ok=True)
+            output_file = f"output/{task_id}.py"
+            with open(output_file, "w") as f:
+                f.write(final_state["code"])
+            
+            final_report = (
+                f"✅ AGENT COMPLETED SUCCESSFULLY\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"Output File: {output_file}\n"
+                f"Retry Count: {final_state['retry_count']}\n"
+                f"Compliance Score: {final_state['spec_compliance_score']:.1%}\n"
+            )
+            final_state["final_report"] = final_report
+            logger.info(final_report)
+        else:
+            final_report = (
+                f"❌ AGENT FAILED TO COMPLETE\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"Retry Count: {final_state['retry_count']}\n"
+                f"Status: {final_state['status']}\n"
+                f"Last Feedback: {final_state['review_feedback'][:200]}\n"
+            )
+            final_state["final_report"] = final_report
+            logger.info(final_report)
         
         return final_state
         

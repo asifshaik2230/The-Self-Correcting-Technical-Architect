@@ -37,5 +37,18 @@
       "write",
       "python"
     ]
+  },
+  {
+    "task_id": "fib_task_001",
+    "task_description": "Write a Python function that calculates the Fibonacci sequence",
+    "technical_spec": "\n    Requirements:\n    1. Function should accept n as parameter\n    2. Should return list of first n Fibonacci numbers\n    3. Should handle edge cases (n <= 0)\n    4. Must include docstring\n    5. Should be optimized for performance\n    ",
+    "final_code": "from typing import List, Union\n\ndef fibonacci_sequence(n: Union[int, None]) -> List[int]:\n    \"\"\"\n    Calculate the Fibonacci sequence up to the nth number.\n\n    Parameters:\n    n (int or None): The number of Fibonacci numbers to generate. If n is None or not an integer,\n                     the function will return an empty list.\n\n    Returns:\n    List[int]: A list containing the first n Fibonacci numbers. If n <= 0, returns an empty list.\n    \n    Raises:\n    TypeError: If n is not an integer or None.\n    \"\"\"\n    if n is None or not isinstance(n, int):\n        # Handle cases where n is None or not an integer\n        return []\n    \n    if n <= 0:\n        # Return an empty list for non-positive n\n        return []\n    \n    # Initialize the list with the first two Fibonacci numbers\n    fib_sequence = [0, 1]\n    \n    # Generate Fibonacci numbers up to the nth number\n    for i in range(2, n):\n        next_fib = fib_sequence[-1] + fib_sequence[-2]\n        fib_sequence.append(next_fib)\n    \n    # Return the list truncated to n elements\n    return fib_sequence[:n]",
+    "spec_compliance_score": 0.98,
+    "timestamp": "2026-04-06T22:43:00.336978",
+    "tags": [
+      "write",
+      "function",
+      "python"
+    ]
   }
 ]
