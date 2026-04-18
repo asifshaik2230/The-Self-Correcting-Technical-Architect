@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     MEMORY_FILE_PATH: str = "logs/experience_memory.json"
     memory_file_path: str = "logs/experience_memory.json"
 
+    # ChromaDB Configuration for Docker
+    CHROMA_HOST: str = "localhost"
+    CHROMA_PORT: int = 8000
+
     # Agent Configuration
     max_retries: int = 3
     MAX_RETRIES: int = 3

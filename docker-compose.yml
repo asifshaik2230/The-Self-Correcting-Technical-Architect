@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  chroma:
+    image: chromadb/chroma:latest
+    ports:
+      - "8000:8000"
+    environment:
+      IS_PERSISTENT: "TRUE"
+    volumes:
+      - chroma_data:/chroma/chroma
+
+  app:
+    build: .
+    ports:
+      - "8501:8501"
+    env_file: .env
+    environment:
+      CHROMA_HOST: chroma
+      CHROMA_PORT: 8000
+    depends_on:
+      - chroma
+    volumes:
+      - ./output:/app/output
+      - ./logs:/app/logs
+
+volumes:
+  chroma_data:
