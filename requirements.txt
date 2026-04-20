@@ -5,6 +5,9 @@ langchain-google-genai>=1.0.0
 langchain-core>=0.2.0
 google-generativeai>=0.5.0
 
+# LangGraph Persistence
+langgraph-checkpoint-postgres>=2.0.0
+
 # Sandbox & Execution
 e2b-code-interpreter>=1.1.0
 
@@ -16,6 +19,9 @@ python-dotenv>=1.0.1
 # Client & Network
 httpx>=0.28.0
 tavily-python>=0.5.0
+
+# Database & Persistence
+psycopg[binary]>=3.1.18
 
 # Utilities
 typing-extensions>=4.12.0

@@ -9,6 +9,7 @@ import streamlit as st
 from datetime import datetime
 import sys
 import os
+import uuid
 
 # Add src to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -22,6 +23,10 @@ def main():
         page_icon="🏗️",
         layout="wide"
     )
+    
+    # Initialize session state for thread_id
+    if "thread_id" not in st.session_state:
+        st.session_state.thread_id = str(uuid.uuid4())
     
     st.title("🏗️ Self-Correcting Technical Architect")
     st.markdown(
@@ -56,6 +61,8 @@ def main():
             value=f"task_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
             key="task_id"
         )
+        
+        st.info(f"🔗 Session ID: `{st.session_state.thread_id}`")
     
     with col2:
         st.subheader("Progress & Results")
@@ -79,7 +86,7 @@ def main():
             # Update UI as execution progresses
             status_placeholder.info("🔍 Phase 1: Researching requirements...")
             final_state = loop.run_until_complete(
-                run_agent(task_description, technical_spec, task_id)
+                run_agent(task_description, technical_spec, task_id, thread_id=st.session_state.thread_id)
             )
             
             if final_state["success"]:
@@ -161,6 +168,90 @@ def main():
             5. **Loop** - Refines until success
             """
         )
+        
+        st.markdown("---")
+        st.subheader("Session Management")
+        if st.button("🔄 New Session"):
+            st.session_state.thread_id = str(uuid.uuid4())
+            st.rerun()
+
+
+if __name__ == "__main__":
+    main()
+            
+            if final_state["success"]:
+                progress_placeholder.success("✅ Generation Completed Successfully!")
+                
+                # Display results
+                with result_placeholder.container():
+                    st.markdown("---")
+                    
+                    # Score and metadata
+                    col_score, col_retry = st.columns(2)
+                    with col_score:
+                        score = final_state.get("spec_compliance_score", 0)
+                        st.metric(
+                            "Compliance Score",
+                            f"{score:.1%}",
+                            delta="High Confidence" if score > 0.9 else "Good"
+                        )
+                    with col_retry:
+                        retries = final_state.get("retry_count", 0)
+                        st.metric("Retry Attempts", retries)
+                    
+                    st.markdown("---")
+                    
+                    # Display code
+                    st.subheader("Generated Code")
+                    code_output = final_state.get("code", "")
+                    st.code(code_output, language="python")
+                    
+                    # Download button
+                    st.download_button(
+                        label="📥 Download Code",
+                        data=code_output,
+                        file_name=f"{task_id}.py",
+                        mime="text/plain"
+                    )
+                    
+                    # Display final report
+                    if final_state.get("final_report"):
+                        st.markdown("---")
+                        st.subheader("Execution Report")
+                        st.text(final_state["final_report"])
+            else:
+                progress_placeholder.error("❌ Generation Failed")
+                status_placeholder.error(
+                    f"Status: {final_state.get('status', 'unknown')}\n\n"
+                    f"Feedback: {final_state.get('review_feedback', 'No feedback')}"
+                )
+        
+        except Exception as e:
+            progress_placeholder.error(f"❌ Error: {str(e)}")
+            st.exception(e)
+    
+    # Sidebar info
+    with st.sidebar:
+        st.markdown("---")
+        st.subheader("About")
+        st.markdown(
+            """
+            **Self-Correcting Technical Architect V2**
+            
+            An AI-powered agent that:
+            - 🔍 Researches requirements
+            - 💻 Generates production code
+            - 🧪 Creates comprehensive tests
+            - 🔄 Refines iteratively
+            - ✅ Validates against specs
+            """
+        )
+        
+        st.markdown("---")
+        st.subheader("Session Management")
+        if st.button("🔄 New Session"):
+            st.session_state.thread_id = str(uuid.uuid4())
+            st.rerun()
 
 
 if __name__ == "__main__":

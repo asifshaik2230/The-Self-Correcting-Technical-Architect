@@ -17,8 +17,10 @@ from datetime import datetime
 from typing import Any
 
 from langgraph.graph import StateGraph, END
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage, AIMessage
+from psycopg_pool import AsyncConnectionPool
 
 from src.state import AgentState, AgentMessage, ExecutionResult
 from src.config import settings
@@ -148,7 +150,8 @@ def initialize_llm() -> ChatGoogleGenerativeAI:
 async def run_agent(
     task_description: str,
     technical_spec: str,
-    task_id: str = "default_task"
+    task_id: str = "default_task",
+    thread_id: str = None
 ) -> dict[str, Any]:
     """
     Run the Self-Correcting Technical Architect agent.
@@ -157,6 +160,7 @@ async def run_agent(
         task_description: Description of the task to solve
         technical_spec: Technical specification for validation
         task_id: Unique identifier for the task
+        thread_id: Optional thread ID for persistent state (defaults to task_id)
         
     Returns:
         dict: Final state after agent execution
@@ -164,19 +168,29 @@ async def run_agent(
     Raises:
         ValueError: If required configuration is missing
     """
+    if thread_id is None:
+        thread_id = task_id
+    
     try:
         logger.info(f"Initializing agent for task: {task_id}")
         logger.info(f"Task: {task_description}")
         
-        # Build the graph
-        graph = build_graph()
-        
         # Create initial state
         initial_state = create_initial_state(task_description, technical_spec, task_id)
         
-        # Run the graph
-        logger.info("Starting LangGraph execution...")
-        final_state = await graph.ainvoke(initial_state)
+        # Run the graph with PostgreSQL persistence
+        logger.info("Starting LangGraph execution with PostgreSQL checkpointer...")
+        
+        async with AsyncConnectionPool(settings.POSTGRES_URI) as pool:
+            checkpointer = AsyncPostgresSaver(pool)
+            await checkpointer.setup()
+            
+            # Build graph with checkpointer
+            graph_instance = build_graph()
+            compiled_graph = graph_instance.compile(checkpointer=checkpointer)
+            
+            config = {"configurable": {"thread_id": thread_id}}
+            final_state = await compiled_graph.ainvoke(initial_state, config=config)
         
         logger.info(f"Agent execution completed. Status: {final_state['status']}")
         logger.info(f"Success: {final_state['success']}")

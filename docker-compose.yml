@@ -1,6 +1,17 @@
 version: '3.8'
 
 services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: architect_memory
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
   chroma:
     image: chromadb/chroma:latest
     ports:
@@ -18,11 +29,14 @@ services:
     environment:
       CHROMA_HOST: chroma
       CHROMA_PORT: 8000
+      POSTGRES_URI: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/architect_memory
     depends_on:
+      - postgres
       - chroma
     volumes:
       - ./output:/app/output
       - ./logs:/app/logs
 
 volumes:
+  postgres_data:
   chroma_data:

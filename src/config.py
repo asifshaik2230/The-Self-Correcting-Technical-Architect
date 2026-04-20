@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     CHROMA_HOST: str = "localhost"
     CHROMA_PORT: int = 8000
 
+    # PostgreSQL Configuration for LangGraph Persistence
+    POSTGRES_URI: str = "postgresql://postgres:postgres@localhost:5432/architect_memory"
+
     # Agent Configuration
     max_retries: int = 3
     MAX_RETRIES: int = 3
