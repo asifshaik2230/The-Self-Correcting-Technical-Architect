@@ -203,7 +203,7 @@ async def run_agent(
         # Run the graph with PostgreSQL persistence
         logger.info("Starting LangGraph execution with PostgreSQL checkpointer...")
         
-        async with AsyncConnectionPool(settings.POSTGRES_URI) as pool:
+        async with AsyncConnectionPool(settings.POSTGRES_URI, kwargs={"autocommit": True}) as pool:
             checkpointer = AsyncPostgresSaver(pool)
             await checkpointer.setup()
             
