@@ -82,7 +82,7 @@ Return only the search query, nothing else."""
             memory_context += f"Previous Solution (Score: {score:.1f}):\n{code_text[:1000]}{'...' if len(code_text) > 1000 else ''}\n\n"
         memory_section = "\nHistoric Reference Code:\n" + memory_context
     
-    research_prompt = f"""You are an expert technical architect. Analyze the following task and specification, incorporating both historical solutions and current web search results.
+    research_prompt = f"""You are an expert technical architect and Tech Lead. Analyze the following task and specification, incorporating both historical solutions and current web search results.
 
 Task: {state['task_description']}
 
@@ -100,11 +100,33 @@ Provide a detailed, research-grounded implementation plan that includes:
 5. Testing strategy
 6. Any relevant libraries, frameworks, or tools identified from research
 
+Additionally, as the Tech Lead, analyze the task and determine the ROUTING DECISION:
+- "frontend": If the task primarily involves UI/UX, web interfaces, Streamlit apps, React components, HTML/CSS, or user-facing applications
+- "backend": If the task primarily involves algorithms, data processing, APIs, databases, server-side logic, or computational tasks
+- "fullstack": If the task requires both frontend and backend components
+
+ROUTING DECISION: [frontend/backend/fullstack]
+
 Be thorough but concise, and explicitly reference findings from both the search results and historical solutions where relevant."""
     
     # Get analysis from LLM
     response = llm.invoke([HumanMessage(content=research_prompt)])
     research_content = response.content
+    
+    # Parse routing decision
+    routing_decision = "backend"  # default
+    if "ROUTING DECISION:" in research_content:
+        decision_line = [line for line in research_content.split('\n') if "ROUTING DECISION:" in line]
+        if decision_line:
+            decision_text = decision_line[0].split("ROUTING DECISION:")[-1].strip().lower()
+            if "frontend" in decision_text:
+                routing_decision = "frontend"
+            elif "backend" in decision_text:
+                routing_decision = "backend"
+            elif "fullstack" in decision_text:
+                routing_decision = "fullstack"
+    
+    state["routing_decision"] = routing_decision
     
     # Update state with research findings
     state["messages"].append({

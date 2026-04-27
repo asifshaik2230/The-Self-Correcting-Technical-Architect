@@ -25,7 +25,8 @@ from psycopg_pool import AsyncConnectionPool
 from src.state import AgentState, AgentMessage, ExecutionResult
 from src.config import settings
 from src.agents.researcher import researcher_node
-from src.agents.coder import coder_node
+from src.agents.frontend import frontend_node
+from src.agents.backend import backend_node
 from src.agents.executor import executor_node
 from src.agents.reviewer import reviewer_node
 
@@ -69,6 +70,7 @@ def create_initial_state(
         ],
         research_notes=None,
         memory_hits=None,
+        routing_decision="",
         code="",
         test_code="",
         code_history=[],
@@ -93,7 +95,7 @@ def build_graph() -> StateGraph:
     """
     Build the LangGraph state machine with all nodes and edges.
     
-    The workflow follows: Researcher → Coder → Executor → Reviewer → (loop or end)
+    The workflow follows: Researcher → (conditional routing) → Frontend/Backend → Executor → Reviewer → (loop or end)
     
     Returns:
         StateGraph: Compiled graph ready for execution
@@ -102,18 +104,33 @@ def build_graph() -> StateGraph:
     
     # Add nodes to the graph
     graph.add_node("researcher", researcher_node)
-    graph.add_node("coder", coder_node)
+    graph.add_node("frontend", frontend_node)
+    graph.add_node("backend", backend_node)
     graph.add_node("executor", executor_node)
     graph.add_node("reviewer", reviewer_node)
     
     # Define edges (workflow transitions)
-    graph.add_edge("researcher", "coder")
-    graph.add_edge("coder", "executor")
+    # Conditional edge from researcher based on routing decision
+    def route_to_coder(state: AgentState) -> str:
+        """Route to appropriate engineer based on routing decision."""
+        decision = state["routing_decision"]
+        if decision == "frontend":
+            return "frontend"
+        elif decision == "backend":
+            return "backend"
+        else:  # "fullstack" or default
+            return "backend"
+    
+    graph.add_conditional_edges("researcher", route_to_coder)
+    
+    # Both frontend and backend output to executor
+    graph.add_edge("frontend", "executor")
+    graph.add_edge("backend", "executor")
     graph.add_edge("executor", "reviewer")
     
     # Conditional edge from reviewer
     # If review passes and spec compliance > 0.8, finish
-    # Otherwise, retry coding (max retries enforced)
+    # Otherwise, retry coding (max retries enforced) - route back to appropriate engineer
     def review_decision(state: AgentState) -> str:
         """Decide whether to retry or finish based on review feedback."""
         if state["success"]:
@@ -123,7 +140,12 @@ def build_graph() -> StateGraph:
             return END
         else:
             logger.info(f"Review failed. Retrying (attempt {state['retry_count'] + 1}/{state['max_retries']})")
-            return "coder"
+            # Route back to the same engineer that was used
+            decision = state["routing_decision"]
+            if decision == "frontend":
+                return "frontend"
+            else:  # "backend" or "fullstack"
+                return "backend"
     
     graph.add_conditional_edges("reviewer", review_decision)
     

@@ -46,6 +46,7 @@ class AgentState(TypedDict):
     # Research state
     research_notes: Optional[str]  # Web search results and findings
     memory_hits: Optional[list[dict[str, Any]]]  # Retrieved memory entries
+    routing_decision: str  # "frontend", "backend", or "fullstack"
     
     # Code-related state
     code: str  # Current implementation
